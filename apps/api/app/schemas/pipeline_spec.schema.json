@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://multibench.local/schemas/pipeline_spec.schema.json",
+  "title": "MultiBench Visual Pipeline Spec (MVP)",
+  "type": "object",
+  "required": ["specVersion", "pipeline", "graph", "lockedBlocks", "runConfig"],
+  "additionalProperties": false,
+  "properties": {
+    "specVersion": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "pipeline": {
+      "type": "object",
+      "required": ["id", "name", "createdAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "required": ["nodes", "edges"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/NodeInstance" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EdgeInstance" }
+        }
+      }
+    },
+    "lockedBlocks": {
+      "description": "Block/version lockfile to ensure reproducibility. Each node.blockRef must exist here.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/LockedBlock" }
+    },
+    "runConfig": {
+      "type": "object",
+      "required": ["seed", "mode"],
+      "additionalProperties": false,
+      "properties": {
+        "seed": { "type": "integer", "minimum": 0 },
+        "mode": {
+          "type": "string",
+          "enum": ["sync", "async"]
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpuLimit": { "type": "number", "minimum": 0 },
+            "memoryMB": { "type": "integer", "minimum": 128 },
+            "timeoutSec": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "PortType": {
+      "type": "string",
+      "description": "Strong-typed port categories; extendable by namespace.",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$",
+      "examples": [
+        "tensor.audio",
+        "tensor.vision",
+        "tensor.embed",
+        "tensor.fused",
+        "labels.class",
+        "model.classifier",
+        "metrics.report"
+      ]
+    },
+    "BlockRef": {
+      "type": "object",
+      "required": ["blockId", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "blockId": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/SemVer" }
+      }
+    },
+    "NodeInstance": {
+      "type": "object",
+      "required": ["id", "type", "blockRef", "inputs", "outputs", "config"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "description": "UI node type (e.g., dataset/encoder/fusion/trainer/evaluator).",
+          "enum": ["dataset", "encoder", "fusion", "objective", "trainer", "evaluator"]
+        },
+        "blockRef": { "$ref": "#/$defs/BlockRef" },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PortDecl" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PortDecl" }
+        },
+        "config": {
+          "type": "object",
+          "description": "Block-specific config; validated by block_version.input_schema in registry."
+        },
+        "ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        }
+      }
+    },
+    "PortDecl": {
+      "type": "object",
+      "required": ["name", "portType"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "portType": { "$ref": "#/$defs/PortType" },
+        "schema": {
+          "type": "object",
+          "description": "Optional JSON Schema for payload contract."
+        }
+      }
+    },
+    "EdgeInstance": {
+      "type": "object",
+      "required": ["id", "from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "from": {
+          "type": "object",
+          "required": ["nodeId", "port"],
+          "additionalProperties": false,
+          "properties": {
+            "nodeId": { "type": "string", "minLength": 1 },
+            "port": { "type": "string", "minLength": 1 }
+          }
+        },
+        "to": {
+          "type": "object",
+          "required": ["nodeId", "port"],
+          "additionalProperties": false,
+          "properties": {
+            "nodeId": { "type": "string", "minLength": 1 },
+            "port": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "LockedBlock": {
+      "type": "object",
+      "required": ["blockId", "version", "digest", "inputSchema", "outputSchema"],
+      "additionalProperties": false,
+      "properties": {
+        "blockId": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/SemVer" },
+        "digest": {
+          "type": "string",
+          "description": "Immutable content hash of the block implementation + schemas (server-generated).",
+          "minLength": 8
+        },
+        "inputSchema": { "type": "object" },
+        "outputSchema": { "type": "object" },
+        "changelog": { "type": "string" },
+        "deprecated": { "type": "boolean" }
+      }
+    }
+  }
+}

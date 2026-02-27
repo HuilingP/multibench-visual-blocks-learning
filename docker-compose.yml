@@ -1,0 +1,69 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-multibench}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-multibench}
+      POSTGRES_DB: ${POSTGRES_DB:-multibench}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      ADMIN_KEY: ${ADMIN_KEY}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build:
+      context: ./apps/api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      ADMIN_KEY: ${ADMIN_KEY}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "-l", "info"]
+    depends_on:
+      - db
+      - redis
+
+  beat:
+    build:
+      context: ./apps/api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      ADMIN_KEY: ${ADMIN_KEY}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+    command: ["celery", "-A", "app.tasks.celery_app", "beat", "-l", "info"]
+    depends_on:
+      - db
+      - redis
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: "http://localhost:${API_PORT:-8000}"
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

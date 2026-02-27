@@ -1,0 +1,384 @@
+{
+  "common": {
+    "language": "语言",
+    "zhCN": "中文",
+    "enUS": "English",
+    "back": "返回",
+    "refresh": "刷新",
+    "save": "保存",
+    "approve": "通过",
+    "reject": "拒绝",
+    "errorPrefix": "错误"
+  },
+  "nav": {
+    "builder": "Builder",
+    "admin": "Admin",
+    "backToBuilder": "返回 Builder"
+  },
+  "builder": {
+    "badge": "MultiBench 可视化积木学习（MVP）",
+    "title": "拖拽搭建多模态 Pipeline，并运行 Toy 实验",
+    "subtitle": "目标是快速验证“强类型端口 + 版本锁定 + 可复现运行记录 + 三类指标展示”的端到端闭环。后续再逐步替换为真实 MultiBench/MultiZoo 组件与隔离执行沙箱。",
+    "endpoints": {
+      "web": "Web: :3000",
+      "api": "API: :8000"
+    }
+  },
+  "canvas": {
+    "registryTitle": "积木库（MVP）",
+    "ruleHint": "连线规则：仅允许 同 portType 的输出→输入连接。",
+    "canvasTitle": "Pipeline 画布",
+    "exportSpec": "导出 Spec",
+    "runToy": "运行 Toy 实验",
+    "specPreview": "Spec 预览 / Run 结果",
+    "inspectorTitle": "积木透视（真实执行）",
+    "buildTrace": "生成透视",
+    "buildingTrace": "生成中…",
+    "traceEmpty": "点击“生成透视”后，这里会显示每个积木的真实输入/输出与为什么能工作。",
+    "traceFocus": "当前聚焦",
+    "specPlaceholder": "点击“导出 Spec”后会在这里显示 JSON",
+    "loadRegistryFailed": "加载 Block Registry 失败：{message}",
+    "quickstart": {
+      "title": "新手引导（3 分钟上手）",
+      "ctaLoadTemplate": "一键加载示例 Pipeline",
+      "ctaClear": "清空画布",
+      "step1": "把 Dataset 放到画布上（它会产出统一 batch）",
+      "step2": "放两个 Encoder，并分别选择 modalityKey=audio/vision",
+      "step3": "把两个 embedding 连到 Fusion",
+      "step4": "把 fused + labels 连到 Trainer",
+      "step5": "把 model 连到 Evaluator，然后点击“运行”",
+      "aha1": "Aha：统一 batch 让模型不再关心每个数据集的对齐细节。",
+      "aha2": "Aha：连不上？大概率是 portType 不匹配（强类型连线）。",
+      "aha3": "Aha：lockedBlocks+digest 锁定版本，让结果可复现可回放。"
+    },
+    "palette": {
+      "datasetToyAV": "Dataset: Toy AV",
+      "encLinearA": "Encoder(A): Linear",
+      "encLinearV": "Encoder(V): Linear",
+      "fusionConcat": "Fusion: Concat",
+      "trainerSGD": "Trainer: SGD",
+      "evaluatorBasic": "Evaluator: Basic"
+    }
+  },
+  "blockHelp": {
+    "title": "这个积木是干什么用的？",
+    "howToUse": "怎么用",
+    "config": "配置（config）",
+    "commonPitfall": "常见坑",
+    "datasets.toy_av": {
+      "what": "生成一个可复现的玩具级多模态数据集，并输出统一的 batch（含 audio/vision）和 labels。",
+      "how": "把它的 batch 输出连到每个 Encoder 的 batch 输入；把 labels 连到 Trainer 的 labels 输入。",
+      "config": "n：样本数；audioDim/visionDim：模态维度；trainRatio：训练/测试切分比例。",
+      "pitfall": "Dataset 输出的是 batch，而不是直接 audio/vision 端口；模态内容在 batch.modalities 里。"
+    },
+    "unimodals.linear": {
+      "what": "把某一路模态（通过 modalityKey 选择）线性投影成 embedding，给 fusion 使用。",
+      "how": "输入接 batch；设置 modalityKey=audio 或 vision；输出 embedA/embedV 连到 Fusion。",
+      "config": "modalityKey：从 batch.modalities 取哪一路；outDim：embedding 维度。",
+      "pitfall": "modalityKey 写错会导致找不到模态；outDim 不一致时 sum fusion 可能报错。"
+    },
+    "fusions.concat": {
+      "what": "把多个 embedding 拼接成一个 fused 表示。",
+      "how": "把 embedA/embedV 连到它的输入；再把 fused 连到 Trainer。",
+      "config": "无（MVP）。",
+      "pitfall": "concat 会改变维度，后续模块要接受 tensor.fused。"
+    },
+    "training_structures.sgd_classifier": {
+      "what": "训练一个线性分类器（SGD），用于 toy 任务。",
+      "how": "输入接 fused + labels；输出 model 连到 Evaluator。",
+      "config": "maxIter：训练迭代；alpha：正则强度。",
+      "pitfall": "labels 必须接上，否则无法监督训练。"
+    },
+    "eval_scripts.basic": {
+      "what": "评估模型并输出三类指标：Performance/Complexity/Robustness。",
+      "how": "输入接 model，运行后在右侧看到指标卡与 Run 历史。",
+      "config": "noiseStd：噪声强度，用于鲁棒性评估。",
+      "pitfall": "robustness 取决于扰动定义（这里是加噪），不同定义不能直接比较。"
+    }
+  },
+  "metrics": {
+    "performance": "Performance",
+    "complexity": "Complexity",
+    "robustness": "Robustness",
+    "accuracy": "accuracy",
+    "params": "params",
+    "trainMs": "trainMs",
+    "drop": "drop"
+  },
+  "runs": {
+    "historyTitle": "Run 历史",
+    "loadFailed": "加载失败：{message}",
+    "empty": "暂无运行记录",
+    "beginnerHint": "三类指标用于从不同角度对比 pipeline：Performance（准不准）/ Complexity（贵不贵）/ Robustness（稳不稳）。"
+  },
+  "admin": {
+    "badge": "MultiBench MVP",
+    "title": "论文候选积木审核（Admin）",
+    "subtitle": "工作流：Paper Watcher 拉取论文 → 生成 paper_candidate（待审） → 人工编辑/校验候选 JSON → 通过 → 一键 materialize 成 Block + BlockVersion(draft) → 走 block review/publish 发布到 registry。",
+    "adminKey": "X-Admin-Key",
+    "adminKeyHint": "单用户模式：仅用于演示审核/发布流。",
+    "tabs": {
+      "pending": "待审",
+      "approved": "已通过"
+    },
+    "detailTitle": "候选详情",
+    "noCandidates": "暂无候选",
+    "jsonParseFailed": "JSON 解析失败：{message}",
+    "promptReadonly": "LLM Prompt（只读）",
+    "proposedEditable": "Proposed Blocks（可编辑 JSON）",
+    "expectedFormat": "期望格式：{format}",
+    "actions": {
+      "stub": "生成 Stub 提案",
+      "saveJson": "保存提案 JSON",
+      "materialize": "生成草案积木版本"
+    },
+    "materializeResult": "已生成草案：{created}；跳过：{skipped}",
+    "materializeHint": "“{action}” 会把候选变成 积木（Block）+ 积木版本（Block Version）（draft）。"
+  },
+  "help": {
+    "glossary": "术语表",
+    "search": "搜索…",
+    "beginnerMode": "新手模式",
+    "beginnerModeOn": "开",
+    "beginnerModeOff": "关",
+    "learnMore": "查看更多",
+    "close": "关闭"
+  },
+  "glossary": {
+    "title": "术语表（给初学者看的）",
+    "subtitle": "你不需要一次理解所有细节。先用“像积木一样组装”来理解：每个积木有输入/输出端口，线把它们连起来，最后跑一次实验得到三类指标。",
+    "sections": {
+      "details": "详细解释",
+      "example": "例子",
+      "pitfall": "常见误解",
+      "empty": "没有匹配项"
+    },
+    "entries": {
+      "block": {
+        "term": "积木（Block）",
+        "oneLiner": "一个可复用的功能模块，比如“数据集”“编码器”“融合”“训练器”“评估器”。",
+        "details": "在这个系统里，你把 Block 拖到画布上，设置配置（config），再用线把它的输出连到下一个 Block 的输入。",
+        "example": "例如：Toy AV Dataset → Linear Encoder(A/V) → Concat Fusion → SGD Trainer → Basic Evaluator。",
+        "pitfall": "不要把“积木”理解成某个具体模型代码文件；它更像一个“能力接口 + 版本”。"
+      },
+      "blockVersion": {
+        "term": "积木版本（Block Version）",
+        "oneLiner": "同一个积木的不同发布版本，用 semver（如 1.0.0）标识。",
+        "details": "版本用于保证你今天搭的 pipeline，明天仍能用同样的积木行为重跑。版本还会记录 changelog、权限声明、最小测试等。",
+        "example": "unimodals.linear@1.0.0 表示线性编码器的 1.0.0 版本。",
+        "pitfall": "不要引用“latest”；pipeline 应锁定到具体版本。"
+      },
+      "registry": {
+        "term": "积木库（Registry）",
+        "oneLiner": "一个“可用积木目录”：列出每个积木及其已发布版本。",
+        "details": "画布左侧的积木列表就是从 Registry 拉取。只有 published 版本才会被普通用户拿来跑实验。",
+        "example": "GET /blocks 返回每个 block 的 latestPublished。",
+        "pitfall": "draft/approved 的版本不一定能被普通用户使用，通常要 published 才算发布。"
+      },
+      "semver": {
+        "term": "SemVer（语义化版本）",
+        "oneLiner": "形如 1.2.3 的版本号：主版本.次版本.修订号。",
+        "details": "常见约定：破坏兼容性改动提升主版本；新增功能提升次版本；修 bug 提升修订号。",
+        "example": "1.0.0 → 1.1.0（新增）→ 1.1.1（修复）→ 2.0.0（不兼容）。",
+        "pitfall": "版本号要和 changelog 一起看，才能知道“改了什么”。"
+      },
+      "changelog": {
+        "term": "Changelog（变更记录）",
+        "oneLiner": "记录某个版本相对上个版本“改了什么、为什么改”。",
+        "details": "对复现与回溯很关键：当结果变化时，你能快速定位是否因为积木版本更新。",
+        "example": "“改进 fusion 的输出维度对齐逻辑；修复 sum fusion 的维度报错”。",
+        "pitfall": "没有 changelog 的版本会让团队很难协作与定位问题。"
+      },
+      "schema": {
+        "term": "Schema（约束/契约）",
+        "oneLiner": "用 JSON Schema 描述“配置长什么样 / 端口输出长什么样”。",
+        "details": "MVP 里：block_version 有 input_schema/output_schema；pipeline spec 也有 schema。它们帮助校验与自动生成表单。",
+        "example": "outDim 必须是整数且 >=2。",
+        "pitfall": "schema 描述的是“允许的形状”，不是实现本身。"
+      },
+      "permissions": {
+        "term": "权限声明（Permissions）",
+        "oneLiner": "积木执行时允许使用的能力：网络/文件系统/GPU 等。",
+        "details": "这是安全边界的一部分：默认不允许网络与文件系统，避免泄露与越权。",
+        "example": "{\"network\":false,\"filesystem\":false,\"gpu\":false}",
+        "pitfall": "权限越大风险越高；发布前必须配套测试与审核。"
+      },
+      "tests": {
+        "term": "最小测试（Tests）",
+        "oneLiner": "发布积木前必须通过的最低限度检查（例如 smoke test）。",
+        "details": "MVP 先用占位字段；后续可扩展为自动化测试脚本、输入输出断言、资源上限等。",
+        "example": "{\"smoke\":true}",
+        "pitfall": "没有最小测试的积木会让积木库不可维护。"
+      },
+      "pipeline": {
+        "term": "Pipeline（流水线）",
+        "oneLiner": "一张有向图：从数据开始，依次经过多个积木，最终得到结果。",
+        "details": "Pipeline 是你在画布上搭出来的“实验配方”。它不仅描述结构，还要锁定依赖版本以便复现。",
+        "example": "dataset→encoders→fusion→trainer→evaluator。",
+        "pitfall": "把 pipeline 当“代码”会更难理解；它更像“可视化配置 + 执行规范”。"
+      },
+      "node": {
+        "term": "节点（Node）",
+        "oneLiner": "画布上的一个积木实例（同一个积木可以放多次）。",
+        "details": "Node 会引用某个 blockId + version，并且有自己的 config（比如 outDim=16）。",
+        "example": "两个 encoder 节点都引用 unimodals.linear@1.0.0，但 config 可以不同。",
+        "pitfall": "Node ≠ Block：Block 是定义，Node 是使用。"
+      },
+      "edge": {
+        "term": "连线（Edge）",
+        "oneLiner": "把一个节点的输出端口连接到另一个节点的输入端口。",
+        "details": "连线表达数据流：上游输出什么类型，下游就必须接收同类型。",
+        "example": "encoder 的 embedA 输出连到 fusion 的 embedA 输入。",
+        "pitfall": "连线不是“执行顺序”，而是“数据依赖关系”。"
+      },
+      "port": {
+        "term": "端口（Port）",
+        "oneLiner": "节点的输入/输出插口：数据从输出口流向输入口。",
+        "details": "端口有名字（如 embedA）和类型（portType）。端口名字用于表达语义，类型用于保证能否连接。",
+        "example": "labels 端口类型是 labels.class；模型端口类型是 model.classifier。",
+        "pitfall": "端口名字相同不代表可连接；以 portType 为准。"
+      },
+      "portType": {
+        "term": "端口类型（portType）",
+        "oneLiner": "端口携带的数据“强类型标签”，用来做连线校验。",
+        "details": "MVP 里采用“完全相等才允许连接”。后续可扩展为子类型/适配器（例如 tensor.image → tensor.vision）。",
+        "example": "tensor.embed 只能连到 tensor.embed。",
+        "pitfall": "portType 不是 Python 类型，它更像领域约定的标签。"
+      },
+      "batch": {
+        "term": "统一批数据（batch.multimodal.v1）",
+        "oneLiner": "一个统一的 batch 结构：把不同模态都放进同一个容器里，模型只需要面对这一种格式。",
+        "details": "核心是 batch.modalities：一个字典，key 是模态名（audio/vision/text/…），value 是该模态的 batch-first 数组。这样新增数据集/模态时，只要把原始数据包装成这个结构，下游 encoder/fusion/trainer 就不用每个数据集写一套对齐逻辑。",
+        "example": "batch = {modalities:{audio:[N,D_a], vision:[N,D_v]}, labels:[N]}",
+        "pitfall": "统一 batch 不等于丢掉细节；复杂模态（视频/变长序列）需要额外 meta（mask/length/timestamp）。"
+      },
+      "dataloader": {
+        "term": "数据加载（Data loading / Dataloader）",
+        "oneLiner": "把原始数据读出来、预处理、对齐，最后产出统一 batch 的那一层。",
+        "details": "这一步是 MultiBench 的关键价值：你不用为 15 个数据集分别写“怎么对齐音频和视频”“怎么 padding 变长序列”等重复工作；数据层统一后，模型层就能复用。",
+        "example": "datasets.* block 负责输出 batch.multimodal.v1。",
+        "pitfall": "把预处理散落在模型里会导致不可复现和难维护；应该集中在 data loading 层。"
+      },
+      "modalityKey": {
+        "term": "modalityKey（模态选择键）",
+        "oneLiner": "告诉 Encoder：从 batch.modalities 里取哪一种模态来编码。",
+        "details": "当 Encoder 的输入统一变成 batch 时，它需要一个字段指明“我负责哪一路模态”。例如同一个 linear encoder 既可编码 audio 也可编码 vision，只需改 modalityKey。",
+        "example": "Encoder(A) config: {modalityKey:\"audio\", outDim:16}",
+        "pitfall": "modalityKey 写错会导致运行时找不到模态；术语表里会显示可用 keys。"
+      },
+      "dataset": {
+        "term": "数据集（Dataset）",
+        "oneLiner": "提供训练/测试所需的数据（以及标签）。",
+        "details": "多模态任务里，Dataset 会把多路模态包装成统一的 batch（batch.multimodal.v1），并提供 labels（如果是监督任务）。",
+        "example": "Toy AV Dataset 输出 batch（含 audio/vision）+ labels。",
+        "pitfall": "真实数据集往往还需要版本、下载方式与缓存策略；MVP 先用合成数据占位。"
+      },
+      "encoder": {
+        "term": "编码器（Encoder）",
+        "oneLiner": "把某个模态的原始输入变成更好用的表示（embedding）。",
+        "details": "常见做法是 CNN/Transformer 等；MVP 里用线性投影占位。",
+        "example": "audio → embedA，vision → embedV。",
+        "pitfall": "不同模态通常需要不同 encoder；不要把所有模态混在一个 encoder 里。"
+      },
+      "fusion": {
+        "term": "融合（Fusion）",
+        "oneLiner": "把多路模态表示合成一个联合表示（fused）。",
+        "details": "融合方式可以是 concat/sum/attention 等。MVP 支持 concat 和 sum。",
+        "example": "embedA + embedV → fused。",
+        "pitfall": "sum fusion 通常要求维度一致；concat 会改变维度。"
+      },
+      "objective": {
+        "term": "目标函数（Objective）",
+        "oneLiner": "训练时要优化的目标，比如分类的交叉熵。",
+        "details": "MVP 中 objective 作为占位概念；训练器内部用 log-loss 实现。",
+        "example": "cross entropy。",
+        "pitfall": "objective 决定“学什么”，但不等于优化器/训练流程。"
+      },
+      "trainer": {
+        "term": "训练器（Trainer）",
+        "oneLiner": "负责训练模型参数，让模型在数据上学会任务。",
+        "details": "Trainer 包含优化策略、训练轮数、正则化等。MVP 用 scikit-learn 的 SGDClassifier 占位。",
+        "example": "maxIter=300, alpha=0.0001。",
+        "pitfall": "同一结构不同 trainer 可能得到不同结果；要记录配置与随机种子。"
+      },
+      "evaluator": {
+        "term": "评估器（Evaluator）",
+        "oneLiner": "把训练好的模型跑在测试集上，并输出指标。",
+        "details": "Evaluator 是“怎么评”，而不是“怎么训”。MVP 输出三类指标。",
+        "example": "accuracy、paramCount、accuracyDrop。",
+        "pitfall": "评估必须固定数据划分与扰动定义，否则对比不公平。"
+      },
+      "spec": {
+        "term": "Spec（规格 JSON）",
+        "oneLiner": "可复现的“运行说明书”：描述 pipeline 图结构、配置、以及锁定版本。",
+        "details": "Spec 是前后端交互的核心：前端导出 spec，后端校验并执行。它应当是可存档、可对比、可回放的。",
+        "example": "包含 graph.nodes/graph.edges、lockedBlocks、runConfig 等。",
+        "pitfall": "不要手写 spec 起步；先用画布生成，再逐步理解字段。"
+      },
+      "lockedBlocks": {
+        "term": "版本锁定（lockedBlocks）",
+        "oneLiner": "把 pipeline 依赖的积木版本“钉死”，避免未来更新导致结果变化。",
+        "details": "lockedBlocks 里包含 blockId、version、digest，以及 schema/changelog/权限/测试等用于追溯的信息。",
+        "example": "training_structures.sgd_classifier@1.0.0 + digest=xxxx。",
+        "pitfall": "只锁 version 不够；还需要 digest 防篡改/防同版本不同内容。"
+      },
+      "digest": {
+        "term": "Digest（内容指纹）",
+        "oneLiner": "对某个积木版本的关键内容做 hash 的短指纹，用于一致性校验。",
+        "details": "后端会校验 digest 是否与 registry 中记录一致；不一致则拒绝运行，从而保证复现与安全。",
+        "example": "digest=“a1b2c3d4e5f6g7h8”（示例）。",
+        "pitfall": "digest 不是密码；它是用来“发现变化”的。"
+      },
+      "run": {
+        "term": "运行（Run）",
+        "oneLiner": "一次具体实验执行：用某个 spec 跑一次，并保存结果与环境信息。",
+        "details": "Run 会记录状态（queued/running/succeeded/failed）、metrics、runtime_env、错误信息等，支持回放和比较。",
+        "example": "同一个 pipeline 用不同 fusion 跑两次，就有两条 runs 记录。",
+        "pitfall": "Run 的结果可比较，但前提是 spec 与 lockedBlocks 可追溯。"
+      },
+      "runtimeEnv": {
+        "term": "运行环境（runtime_env）",
+        "oneLiner": "记录这次 run 用的 Python/平台/关键依赖版本等信息。",
+        "details": "环境信息能解释“为什么同样的 spec 在不同机器上结果不同”，也是复现的重要组成。",
+        "example": "python=3.11.x, numpy=2.x, scikit-learn=1.5.2。",
+        "pitfall": "只记录 spec 不够；环境变化也可能导致结果变化。"
+      },
+      "performance": {
+        "term": "Performance（性能）",
+        "oneLiner": "模型“准不准”。MVP 用 accuracy 代表。",
+        "details": "后续可扩展为 F1、AUC、mAP 等，以及多任务/多模态特定指标。",
+        "example": "accuracy=0.83。",
+        "pitfall": "性能高不代表成本低或更稳健。"
+      },
+      "complexity": {
+        "term": "Complexity（复杂度）",
+        "oneLiner": "模型“贵不贵”。MVP 用参数量 + 训练耗时代表。",
+        "details": "后续可扩展为 FLOPs、显存占用、吞吐/延迟等。",
+        "example": "paramCount=12345, trainTimeMs=80。",
+        "pitfall": "复杂度指标通常和硬件/实现有关，需要记录环境信息。"
+      },
+      "robustness": {
+        "term": "Robustness（鲁棒性）",
+        "oneLiner": "模型“抗不抗折腾”。MVP 用加噪后的 accuracy 下降代表。",
+        "details": "后续可扩展为缺失模态、分布偏移、对抗扰动、噪声强度曲线等。",
+        "example": "noiseStd=0.2, accuracyDrop=0.05。",
+        "pitfall": "鲁棒性要定义“扰动是什么”，否则不可比较。"
+      },
+      "reviewFlow": {
+        "term": "审核发布流（Review Workflow）",
+        "oneLiner": "积木从草稿到发布要经过人工审核：draft → pending_review → approved → published。",
+        "details": "审核是安全与质量的关键：需要权限声明、最小测试、changelog 等，避免把危险/不可复现的积木放进库。",
+        "example": "先在 Admin/Review 里通过，再 publish 才会成为可用积木。",
+        "pitfall": "approved 不是 published；只有 published 才对普通用户可见。"
+      },
+      "paperCandidate": {
+        "term": "论文候选积木（paper_candidate）",
+        "oneLiner": "系统从论文生成的“候选积木建议”，必须人工审核，不能自动发布。",
+        "details": "候选通常来自 LLM 提取：建议 blockId、端口、配置 schema、权限、测试。通过后可 materialize 为 draft block_version。",
+        "example": "从一篇新论文提取一个新的 fusion block 作为候选。",
+        "pitfall": "候选只是建议，审核人需要校验可实现性与安全。"
+      }
+    }
+  }
+}
+

@@ -1,0 +1,384 @@
+{
+  "common": {
+    "language": "Language",
+    "zhCN": "中文",
+    "enUS": "English",
+    "back": "Back",
+    "refresh": "Refresh",
+    "save": "Save",
+    "approve": "Approve",
+    "reject": "Reject",
+    "errorPrefix": "Error"
+  },
+  "nav": {
+    "builder": "Builder",
+    "admin": "Admin",
+    "backToBuilder": "Back to Builder"
+  },
+  "builder": {
+    "badge": "MultiBench Visual Blocks (MVP)",
+    "title": "Build a multimodal pipeline by dragging blocks, then run a toy experiment",
+    "subtitle": "This MVP validates an end-to-end loop: strongly-typed ports, version locking, reproducible run records, and three metric groups. Later we will swap in real MultiBench/MultiZoo components and sandboxed execution.",
+    "endpoints": {
+      "web": "Web: :3000",
+      "api": "API: :8000"
+    }
+  },
+  "canvas": {
+    "registryTitle": "Block Palette (MVP)",
+    "ruleHint": "Wiring rule: only allow output → input when portType matches exactly.",
+    "canvasTitle": "Pipeline Canvas",
+    "exportSpec": "Export Spec",
+    "runToy": "Run Toy Experiment",
+    "specPreview": "Spec Preview / Run Result",
+    "inspectorTitle": "Block Inspector (real trace)",
+    "buildTrace": "Generate Trace",
+    "buildingTrace": "Generating…",
+    "traceEmpty": "Click “Generate Trace” to inspect real per-block inputs/outputs and why the pipeline works.",
+    "traceFocus": "Focused step",
+    "specPlaceholder": "Click “Export Spec” to see JSON here",
+    "loadRegistryFailed": "Failed to load Block Registry: {message}",
+    "quickstart": {
+      "title": "Beginner guide (3 minutes)",
+      "ctaLoadTemplate": "Load example pipeline",
+      "ctaClear": "Clear canvas",
+      "step1": "Place a Dataset on the canvas (it produces a unified batch)",
+      "step2": "Place two Encoders and set modalityKey=audio / vision",
+      "step3": "Wire both embeddings into Fusion",
+      "step4": "Wire fused + labels into Trainer",
+      "step5": "Wire model into Evaluator, then click “Run”",
+      "aha1": "Aha: a unified batch means models don't need per-dataset alignment logic.",
+      "aha2": "Aha: can't connect? Likely portType mismatch (strongly-typed wiring).",
+      "aha3": "Aha: lockedBlocks + digest pins versions for reproducible replays."
+    },
+    "palette": {
+      "datasetToyAV": "Dataset: Toy AV",
+      "encLinearA": "Encoder(A): Linear",
+      "encLinearV": "Encoder(V): Linear",
+      "fusionConcat": "Fusion: Concat",
+      "trainerSGD": "Trainer: SGD",
+      "evaluatorBasic": "Evaluator: Basic"
+    }
+  },
+  "blockHelp": {
+    "title": "What does this block do?",
+    "howToUse": "How to use",
+    "config": "Config",
+    "commonPitfall": "Common pitfall",
+    "datasets.toy_av": {
+      "what": "Generates a deterministic toy multimodal dataset and outputs a unified batch (audio/vision) plus labels.",
+      "how": "Wire batch → each Encoder(batch); wire labels → Trainer(labels).",
+      "config": "n: sample count; audioDim/visionDim: modality dims; trainRatio: train/test split.",
+      "pitfall": "Dataset outputs batch, not raw audio/vision ports; modalities live in batch.modalities."
+    },
+    "unimodals.linear": {
+      "what": "Projects one modality (chosen by modalityKey) into an embedding for fusion.",
+      "how": "Input is batch; set modalityKey=audio or vision; wire embed → Fusion.",
+      "config": "modalityKey selects which batch.modalities entry to encode; outDim is embedding dim.",
+      "pitfall": "Wrong modalityKey causes missing-modality errors; mismatched outDim may break sum fusion."
+    },
+    "fusions.concat": {
+      "what": "Concatenates multiple embeddings into a fused representation.",
+      "how": "Wire embedA/embedV into inputs; wire fused into Trainer.",
+      "config": "None (MVP).",
+      "pitfall": "Concat changes dimensionality; downstream must accept tensor.fused."
+    },
+    "training_structures.sgd_classifier": {
+      "what": "Trains a linear classifier (SGD) for the toy task.",
+      "how": "Wire fused + labels into inputs; wire model into Evaluator.",
+      "config": "maxIter: iterations; alpha: regularization strength.",
+      "pitfall": "Labels are required for supervised training."
+    },
+    "eval_scripts.basic": {
+      "what": "Evaluates the model and outputs Performance/Complexity/Robustness metrics.",
+      "how": "Wire model into input; see metric cards and run history on the right.",
+      "config": "noiseStd controls robustness noise level.",
+      "pitfall": "Robustness depends on perturbation definition (here: additive noise)."
+    }
+  },
+  "metrics": {
+    "performance": "Performance",
+    "complexity": "Complexity",
+    "robustness": "Robustness",
+    "accuracy": "accuracy",
+    "params": "params",
+    "trainMs": "trainMs",
+    "drop": "drop"
+  },
+  "runs": {
+    "historyTitle": "Run History",
+    "loadFailed": "Failed to load: {message}",
+    "empty": "No runs yet",
+    "beginnerHint": "The three metric groups help you compare pipelines from different angles: Performance (accuracy), Complexity (cost), Robustness (stability)."
+  },
+  "admin": {
+    "badge": "MultiBench MVP",
+    "title": "Paper Candidate Review (Admin)",
+    "subtitle": "Flow: Paper Watcher pulls papers → creates paper_candidate (pending) → human edits/validates candidate JSON → approve → materialize into Block + BlockVersion(draft) → publish via block review/publish workflow.",
+    "adminKey": "X-Admin-Key",
+    "adminKeyHint": "Single-user mode, for demo only.",
+    "tabs": {
+      "pending": "Pending",
+      "approved": "Approved"
+    },
+    "detailTitle": "Candidate Details",
+    "noCandidates": "No candidates",
+    "jsonParseFailed": "JSON parse failed: {message}",
+    "promptReadonly": "LLM Prompt (read-only)",
+    "proposedEditable": "Proposed Blocks (editable JSON)",
+    "expectedFormat": "Expected format: {format}",
+    "actions": {
+      "stub": "Generate Stub Proposal",
+      "saveJson": "Save Proposal JSON",
+      "materialize": "Materialize Draft Block Versions"
+    },
+    "materializeResult": "Drafts created: {created}; skipped: {skipped}",
+    "materializeHint": "“{action}” turns this candidate into a Block + Block Version (draft)."
+  },
+  "help": {
+    "glossary": "Glossary",
+    "search": "Search…",
+    "beginnerMode": "Beginner mode",
+    "beginnerModeOn": "On",
+    "beginnerModeOff": "Off",
+    "learnMore": "Learn more",
+    "close": "Close"
+  },
+  "glossary": {
+    "title": "Glossary (for beginners)",
+    "subtitle": "You don't need to learn everything at once. Think in LEGO terms: each block has input/output ports, edges connect them, and a run produces three metric groups.",
+    "sections": {
+      "details": "Details",
+      "example": "Example",
+      "pitfall": "Common pitfall",
+      "empty": "No matches"
+    },
+    "entries": {
+      "block": {
+        "term": "Block",
+        "oneLiner": "A reusable module, e.g. dataset, encoder, fusion, trainer, evaluator.",
+        "details": "You drag blocks onto the canvas, set config, and wire outputs to inputs to form a pipeline.",
+        "example": "Toy AV Dataset → Linear Encoder(A/V) → Concat Fusion → SGD Trainer → Basic Evaluator.",
+        "pitfall": "A block is not a single code file; it's closer to an interface + a versioned behavior."
+      },
+      "blockVersion": {
+        "term": "Block Version",
+        "oneLiner": "A specific released version of a block, identified by semver (e.g. 1.0.0).",
+        "details": "Versions make pipelines reproducible over time. They also carry changelog, permissions, and minimal tests.",
+        "example": "unimodals.linear@1.0.0",
+        "pitfall": "Avoid referencing “latest”; pin a specific version."
+      },
+      "registry": {
+        "term": "Registry",
+        "oneLiner": "A catalog of available blocks and their published versions.",
+        "details": "The palette on the left is loaded from the Registry. In general, only published versions are meant for normal users to run.",
+        "example": "GET /blocks returns each block with latestPublished.",
+        "pitfall": "draft/approved are not necessarily usable by normal users; published is the release gate."
+      },
+      "semver": {
+        "term": "SemVer",
+        "oneLiner": "Semantic versioning like 1.2.3 (major.minor.patch).",
+        "details": "Typical convention: breaking changes bump major; new features bump minor; bug fixes bump patch.",
+        "example": "1.0.0 → 1.1.0 → 1.1.1 → 2.0.0",
+        "pitfall": "Read semver together with changelog to understand what changed."
+      },
+      "changelog": {
+        "term": "Changelog",
+        "oneLiner": "A record of what changed (and why) in a version.",
+        "details": "Critical for reproducibility and debugging when results drift across time.",
+        "example": "“Fix sum fusion dimension check; improve output schema.”",
+        "pitfall": "Without changelog, teams struggle to collaborate and trace issues."
+      },
+      "schema": {
+        "term": "Schema",
+        "oneLiner": "A JSON Schema that describes allowed config shapes and I/O contracts.",
+        "details": "In MVP: block_version has input_schema/output_schema; the pipeline spec has a schema too. This enables validation and form generation.",
+        "example": "outDim must be an integer >= 2.",
+        "pitfall": "Schema describes allowed shapes, not the implementation itself."
+      },
+      "permissions": {
+        "term": "Permissions",
+        "oneLiner": "Declared capabilities a block needs (network/filesystem/GPU, etc).",
+        "details": "A key security boundary: default deny, request the minimum needed.",
+        "example": "{\"network\":false,\"filesystem\":false,\"gpu\":false}",
+        "pitfall": "More permissions means higher risk; require review and tests."
+      },
+      "tests": {
+        "term": "Minimal tests",
+        "oneLiner": "The minimum checks a block version must pass before publishing (e.g. smoke test).",
+        "details": "MVP keeps this as a placeholder; later can extend to automated test scripts and resource constraints.",
+        "example": "{\"smoke\":true}",
+        "pitfall": "Without minimal tests, a registry becomes unmaintainable."
+      },
+      "pipeline": {
+        "term": "Pipeline",
+        "oneLiner": "A directed graph from data → modules → results.",
+        "details": "A pipeline is your experiment recipe. It describes structure and locks dependencies for reproducibility.",
+        "example": "dataset→encoders→fusion→trainer→evaluator",
+        "pitfall": "It's not code; it's a visual configuration + execution spec."
+      },
+      "node": {
+        "term": "Node",
+        "oneLiner": "A block instance on the canvas (you can place the same block multiple times).",
+        "details": "A node references blockId + version, and has its own config (e.g. outDim=16).",
+        "example": "Two encoder nodes can both use unimodals.linear@1.0.0 but with different configs.",
+        "pitfall": "Node ≠ Block: block is the definition, node is a usage."
+      },
+      "edge": {
+        "term": "Edge",
+        "oneLiner": "A wire from one node's output port to another node's input port.",
+        "details": "Edges represent data flow and dependencies between modules.",
+        "example": "encoder.embedA → fusion.embedA",
+        "pitfall": "Edges express data dependency, not just a linear execution order."
+      },
+      "port": {
+        "term": "Port",
+        "oneLiner": "An input/output socket on a node. Data flows out of outputs into inputs.",
+        "details": "Ports have a name (semantic) and a portType (compatibility).",
+        "example": "labels.class vs model.classifier",
+        "pitfall": "Same port name doesn't guarantee compatibility; portType does."
+      },
+      "portType": {
+        "term": "portType",
+        "oneLiner": "A strong, namespaced type label used to validate wiring.",
+        "details": "In MVP we require exact match. Later we can add subtyping/adapters.",
+        "example": "tensor.embed can only connect to tensor.embed.",
+        "pitfall": "It's not a Python type; it's a domain label."
+      },
+      "batch": {
+        "term": "Unified batch (batch.multimodal.v1)",
+        "oneLiner": "A single standardized batch contract: all modalities live in one container, and models only handle this one format.",
+        "details": "The core is batch.modalities: a map from modality name (audio/vision/text/…) to a batch-first array. When new datasets/modalities are added, only the data loading layer needs changes; downstream encoders/fusions/trainers can stay the same.",
+        "example": "batch = {modalities:{audio:[N,D_a], vision:[N,D_v]}, labels:[N]}",
+        "pitfall": "A unified batch doesn't remove complexity; rich modalities (video/variable-length) still need meta like masks/lengths/timestamps."
+      },
+      "dataloader": {
+        "term": "Data loading (Dataloader)",
+        "oneLiner": "The layer that reads raw data, preprocesses and aligns it, then emits the unified batch contract.",
+        "details": "This is the key MultiBench value: you avoid writing alignment/preprocess logic per dataset. With a unified data layer, the model layer becomes reusable.",
+        "example": "datasets.* blocks output batch.multimodal.v1.",
+        "pitfall": "Scattering preprocessing inside models hurts reproducibility and maintainability; keep it in the data loading layer."
+      },
+      "modalityKey": {
+        "term": "modalityKey",
+        "oneLiner": "Tells an encoder which modality to read from batch.modalities.",
+        "details": "When encoder input is standardized as batch, an encoder needs a key to choose its modality. The same linear encoder can encode audio or vision by changing modalityKey.",
+        "example": "Encoder(A) config: {modalityKey:\"audio\", outDim:16}",
+        "pitfall": "Wrong modalityKey causes missing-modality errors at runtime."
+      },
+      "dataset": {
+        "term": "Dataset",
+        "oneLiner": "Provides training/testing data (and labels).",
+        "details": "In multimodal tasks, datasets wrap multiple modalities into a unified batch (batch.multimodal.v1) and provide labels for supervised tasks.",
+        "example": "Toy AV Dataset outputs batch (with audio/vision) + labels.",
+        "pitfall": "Real datasets need versioning, download and caching; MVP uses synthetic data as a stub."
+      },
+      "encoder": {
+        "term": "Encoder",
+        "oneLiner": "Turns raw modality input into a useful representation (embedding).",
+        "details": "Commonly CNNs/Transformers; MVP uses a simple linear projection stub.",
+        "example": "audio → embedA, vision → embedV",
+        "pitfall": "Different modalities typically need different encoders."
+      },
+      "fusion": {
+        "term": "Fusion",
+        "oneLiner": "Combines multiple modality embeddings into a joint representation.",
+        "details": "Fusion can be concat/sum/attention/etc. MVP supports concat and sum.",
+        "example": "embedA + embedV → fused",
+        "pitfall": "Sum usually requires matching dimensions; concat changes dimensionality."
+      },
+      "objective": {
+        "term": "Objective",
+        "oneLiner": "The training objective to optimize, e.g. cross entropy for classification.",
+        "details": "In MVP, objective is a placeholder concept; the trainer uses log-loss internally.",
+        "example": "cross entropy",
+        "pitfall": "Objective is not the optimizer/training procedure."
+      },
+      "trainer": {
+        "term": "Trainer",
+        "oneLiner": "Trains model parameters on data.",
+        "details": "Includes optimization strategy, iterations, regularization, etc. MVP uses scikit-learn's SGDClassifier as a stub.",
+        "example": "maxIter=300, alpha=0.0001",
+        "pitfall": "Different trainers/configs can change results; record config and seed."
+      },
+      "evaluator": {
+        "term": "Evaluator",
+        "oneLiner": "Evaluates a trained model and outputs metrics.",
+        "details": "Evaluator is about how we measure, not how we train. MVP outputs three metric groups.",
+        "example": "accuracy, paramCount, accuracyDrop",
+        "pitfall": "Evaluation must fix splits and perturbations to be comparable."
+      },
+      "spec": {
+        "term": "Spec (JSON)",
+        "oneLiner": "A reproducible run instruction: graph + config + locked versions.",
+        "details": "The spec is the contract between UI and backend. It can be stored, diffed, and replayed.",
+        "example": "graph.nodes/edges, lockedBlocks, runConfig",
+        "pitfall": "Don't hand-write specs initially; generate from the canvas first."
+      },
+      "lockedBlocks": {
+        "term": "lockedBlocks",
+        "oneLiner": "Pins the exact block versions a pipeline depends on.",
+        "details": "Includes blockId, version, digest and traceability fields like schema/changelog/permissions/tests.",
+        "example": "training_structures.sgd_classifier@1.0.0 + digest=xxxx",
+        "pitfall": "Version alone is not enough; digest helps detect content drift."
+      },
+      "digest": {
+        "term": "Digest",
+        "oneLiner": "A short hash fingerprint for integrity checks of a block version.",
+        "details": "Backend verifies digest matches registry, rejecting mismatches to preserve reproducibility and safety.",
+        "example": "digest=\"a1b2c3d4e5f6g7h8\" (example)",
+        "pitfall": "Digest is not a password; it's for change detection."
+      },
+      "run": {
+        "term": "Run",
+        "oneLiner": "One concrete execution of a spec, with results and environment recorded.",
+        "details": "A run records status, metrics, runtime_env and errors for replay and comparison.",
+        "example": "Two fusions → two runs → compare metrics.",
+        "pitfall": "Meaningful comparisons require traceable specs and lockedBlocks."
+      },
+      "runtimeEnv": {
+        "term": "runtime_env",
+        "oneLiner": "Records Python/platform/key dependency versions for a run.",
+        "details": "Environment helps explain differences across machines and is part of reproducibility.",
+        "example": "python=3.11.x, numpy=2.x, scikit-learn=1.5.2",
+        "pitfall": "Spec alone is not enough; environment changes can change results."
+      },
+      "performance": {
+        "term": "Performance",
+        "oneLiner": "How accurate the model is (MVP uses accuracy).",
+        "details": "Later can extend to F1/AUC/mAP and multimodal-specific metrics.",
+        "example": "accuracy=0.83",
+        "pitfall": "High performance doesn't guarantee low cost or robustness."
+      },
+      "complexity": {
+        "term": "Complexity",
+        "oneLiner": "How expensive the model is (MVP uses parameter count + train time).",
+        "details": "Later can extend to FLOPs, memory, throughput, latency.",
+        "example": "paramCount=12345, trainTimeMs=80",
+        "pitfall": "Complexity depends on hardware and implementation; record environment."
+      },
+      "robustness": {
+        "term": "Robustness",
+        "oneLiner": "How well the model holds up under perturbations (MVP uses noise accuracy drop).",
+        "details": "Later can extend to missing modality, distribution shift, adversarial noise, robustness curves.",
+        "example": "noiseStd=0.2, accuracyDrop=0.05",
+        "pitfall": "Robustness must define the perturbation to be comparable."
+      },
+      "reviewFlow": {
+        "term": "Review workflow",
+        "oneLiner": "Blocks go through human review: draft → pending_review → approved → published.",
+        "details": "Review enforces safety and quality via permissions, tests, and changelog before publishing.",
+        "example": "Only published versions should be used by normal users.",
+        "pitfall": "Approved is not published."
+      },
+      "paperCandidate": {
+        "term": "paper_candidate",
+        "oneLiner": "A candidate block proposal generated from a paper; must be reviewed, never auto-published.",
+        "details": "Often produced by LLM extraction: suggested blockId, ports, config schema, permissions, tests. Approved candidates can be materialized into draft block versions.",
+        "example": "A new fusion block proposal extracted from a recent paper.",
+        "pitfall": "Candidates are suggestions; reviewers must validate feasibility and safety."
+      }
+    }
+  }
+}
+

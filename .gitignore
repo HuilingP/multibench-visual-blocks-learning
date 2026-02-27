@@ -1,0 +1,23 @@
+.DS_Store
+.env
+.env.local
+.venv
+.venv311
+__pycache__/
+*.pyc
+
+# Node / Next
+node_modules/
+.next/
+npm-debug.log*
+
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+
+# Local database and runtime artifacts
+*.db
+*.sqlite3
+*.log
+
